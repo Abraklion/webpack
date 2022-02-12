@@ -1,24 +1,16 @@
-// импортируем модаль сервис
-import AppService from "./modules/app.service";
+import './scss/index.scss';
 
-// импортируем модаль настроек
-import {config} from './modules/config';
+import $ from 'jquery';
 
-// импортируем модаль компоненты
-import "./modules/header.component";
+const userStack = {
+  language: 'JavaScript',
+  framework: 'Angular'
+}
 
-// импортируем стили CSS
-import "./css/index.css";
+const user = {
+  name: 'Vitalij',
+  age: '37',
+  ...userStack
+}
 
-// импортируем стили LESS
-import "./less/index.less";
-
-// импортируем стили Scss
-import "./scss/index.scss";
-
-console.log("ВОт здесь" + config.key);
-
-const service = new AppService("Hello world!")
-
-service.log();
-
+console.log(user)

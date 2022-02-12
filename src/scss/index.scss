@@ -1,6 +1,17 @@
-$margin: 20px;
+@import "variable";
+@import "fonts";
 
+.test999{
+  color: blue;
+  text-transform: lowercase;
+  height: 140px;
 
-hr{
-  margin: $margin;
+  display: flex;
+
+  justify-content: center;
+}
+
+.test3{
+  color: $black;
+  text-transform: lowercase;
 }

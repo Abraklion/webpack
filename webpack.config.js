@@ -1,68 +1,154 @@
-const path = require('path'); // Встроеный модуль NODE, помогает работать с путями
-const HtmlWebpackPlugin = require('html-webpack-plugin'); // Плагин WebPack - легко создавайт HTML-файлы для обслуживания ваших пакетов
-const MiniCssExtractPlugin = require("mini-css-extract-plugin"); // Плагин WebPack - экспортирует CSS в отдельный фаил
-const CssMinimizerPlugin = require("css-minimizer-webpack-plugin"); // Плагин WebPack - минимизирует CSS
-const TerserPlugin = require("terser-webpack-plugin");  // Плагин WebPack - минимизирует JS
+const HtmlWebpackPlugin = require('html-webpack-plugin'); // Устанавливаем плагин "html-webpack-plugin" - создает HTML-файлы
+const MiniCssExtractPlugin = require("mini-css-extract-plugin"); // Устанавливаем плагин "mini-css-extract-plugin" - экспортирует CSS в отдельный фаил
+
+let mode = 'development'; // development (для разработки) | production (все максимально оптимизировано)
+
+if (process.env.NODE_ENV === 'production') {  // если системная переменная равна production
+
+  mode = 'production'; // то свойство mode перезаписываем в значения production
+
+}
+
+console.log(`Проект собирается в режиме: ${mode}`) // сообщает в консось в каком режиме собирается проект
 
 module.exports = {
-    // mode: 'production', // production(все максимально оптимизировано) | development (для разработки)
-    entry: './src/index.js', // вдохной фаил нашего приложения (точка входа)(от куда берем)
-    output: {  // куда ложим
-        filename: 'bundle.js',  // названия файла который должен получится в резульнате работы webpack
-        path: path.resolve(__dirname, 'dist') // куда положить фаил resolve( текущая папка, указать ту папку куда нужно сложить)
-    },
-    module: {  // раздел манипуляций с файлами
-        rules: [
-            // подгрузчик 1: ( ДЛЯ CSS ) css-loader - подгружает css как модуль | style-loader вставляет стили в index.html
-            {
-                test: /\.css$/, // расширения файлов на которых будет влиять loader
-                use: [MiniCssExtractPlugin.loader, 'css-loader'] // список используемых loader (вебпак будет их считывать с права на лево) | Вариант 1: CSS в отдельном файле
-                // use: ['style-loader', 'css-loader'] // список используемых loader (вебпак будет их считывать с права на лево) | Вариант 2: CSS вместе с HTML
+
+  /* свойство Mode - хранит режим разработки */
+  mode: mode,
+
+  /* свойство Entry - вдохные фаилы нашего приложения */
+  entry: {
+    build: './src/index.js', // фаил index будет переименован build.js
+    // user: './src/user.js', // если надо 2 файл просто дабавте его таким образом ключ : путь
+  },
+
+  /* свойство Output - пути выхода */
+  output: {
+
+    clean: true, // очищает папку dist перед сборкой проекта
+    filename: 'assets/js/[name].[contenthash].js',  // названия файла который должен получится в резульнате работы webpack
+    // assetModuleFilename: "assets/[hash][ext][query]", // задает выходной путь для всего статический контента
+
+  },
+
+  /* свойство Plugins - здесь вызываются и настраиваются плагины */
+  plugins: [
+
+    /* Так как все плагины являются классам, мы создаем экземпляр класса */
+
+    // создаем экземпляр класса "HtmlWebpackPlugin"
+    new HtmlWebpackPlugin({
+
+      template: "./src/pug/index.pug"  // путь к входному файлу (шаблону)
+
+    }),
+
+    // создаем экземпляр класса "MiniCssExtractPlugin"
+    new MiniCssExtractPlugin({
+
+      filename: 'assets/css/style.[contenthash].css' // имя файла на выходе (попадет в dist)
+
+    })
+
+  ],
+
+  /* свойство Module - здесь вызываются и настраиваются лоудеры */
+  module: {
+
+    rules: [
+
+      // Обработчик 1: Подключаем шаблонизатор Pug
+      {
+        test: /\.pug$/,
+        loader: 'pug-loader',
+        exclude: /(node_modules|bower_components)/,
+      },
+
+      // Обработчик 2: Выдергивает картинки из Html и складывает в папку assets
+      {
+        test: /\.html$/i,
+        loader: "html-loader",
+        generator: {
+          filename: 'assets/img/[hash][ext][query]' // указываем папку куда складывать картинки
+        }
+      },
+
+      // Обработчик 3: ( для CSS | SASS | SCSS ) css-loader - подгружает css как модуль | style-loader вставляет стили в index.html
+      {
+
+        test: /\.(sa|sc|c)ss$/, // расширения файлов на которых будет влиять loader
+        use: [
+          (mode === 'development') ? "style-loader" : MiniCssExtractPlugin.loader, // если режим development: вставляем стили в код html, иначе в отдельный фаил
+          "css-loader", // импортирует как модуль в index.js
+          {
+            loader: "postcss-loader",
+            options: {
+              postcssOptions: {
+                plugins: [
+                  [
+                    "postcss-preset-env",
+                    {
+                      // Options
+                    },
+                  ],
+                ],
+              },
             },
-            // подгрузчик 2: ( ДЛЯ LESS ) less-loader - компелирует Less | css-loader - подгружает less как модуль | MiniCssExtractPlugin.loader - экспортирует CSS в отдельный фаил
-            {
-                test: /\.less$/, // расширения файлов на которых будет влиять loader
-                use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader']  // список используемых loader (вебпак будет их считывать с права на лево)
-            },
-            // подгрузчик 3: ( ДЛЯ SCSS ) sass-loader - компелирует Scss | css-loader - подгружает sass как модуль | MiniCssExtractPlugin.loader - экспортирует CSS в отдельный фаил
-            {
-                test: /\.scss$/, // расширения файлов на которых будет влиять loader
-                use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']  // список используемых loader (вебпак будет их считывать с права на лево)
-            },
-            // подгрузчик 4: ( ДЛЯ JS ) компелирует ES5 в ES6
-            {
-                test: /\.m?js$/, // расширения файлов на которых будет влиять loader
-                exclude: /node_modules/,
-                use: {
-                    loader: "babel-loader", // список используемых loader (вебпак будет их считывать с права на лево)
-                    options: {
-                        presets: ['@babel/preset-env']
-                    }
-                }
-            }
+          }, // вставляет автопрефиксы
+          "sass-loader",  // компелирует Scss в Css
         ]
-    },
-    plugins: [ // раздел подгружаем плагин
-        new HtmlWebpackPlugin({    // создаем экземпляр обьекта
-            filename: "index.html",       // имя файла на выходе (попадет в dist)
-            template: "./src/index.html"  // путь к входному файлу (шаблону)
-        }),
-        new MiniCssExtractPlugin({ // создаем экземпляр обьекта
-            filename: 'style.css'         // имя файла на выходе (попадет в dist)
-        })
-    ],
-    devServer: {  // Локальный сервер (перезагрузка браузера автоматически)
-        // static: {
-        //     directory: path.resolve(__dirname, 'src'), // откуда смотреть
-        // },
-        watchFiles: ['src/**/*'], // откуда смотреть
-        port: 9000, // порт на которым открывать
-    },
-    optimization: { // раздел минимизация файлов
-        minimizer: [
-            new CssMinimizerPlugin(), // создаем экземпляр обьекта
-            new TerserPlugin(), // создаем экземпляр обьекта
-        ]
+      },
+
+      // Обработчик 4: ( для png | svg | jpg | jpeg | gif ) выдергивает картинки из стилий и складывает в папку assets
+      {
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        type: 'asset/resource',
+        generator: {
+          filename: 'assets/img/[hash][ext][query]' // указываем папку куда складывать картинки
+        }
+      },
+
+      // Обработчик 5: ( woff | woff2 | eot | ttf | otf ) берет шрифты из стилий и складывает в папку assets
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/i,
+        type: 'asset/resource',
+        generator: {
+          filename: 'assets/fonts/[hash][ext][query]' // указываем папку куда складывать шрифты
+        }
+      },
+
+      // Обработчик 6: ( ДЛЯ JS ) компелирует ES6 в ES5
+      {
+        test: /\.m?js$/,
+        exclude: /(node_modules|bower_components)/,
+        use: {
+          loader: "babel-loader",
+          options: {
+            presets: ['@babel/preset-env']
+          }
+        }
+      }
+
+    ]
+
+  },
+
+  /* свойство Optimization - раздел оптимизации */
+  optimization: {
+    splitChunks: {  // вырезает jQuery и подключает отдельным файлом
+      chunks: 'all'
     }
+  },
+
+  /* свойство Devtool - подключаем исходные карты */
+  devtool: 'source-map',
+
+  /* свойство devServer - разварачивает локальный сервер */
+  devServer: {
+
+    open: true, // открывает вкладку в браузере
+    watchFiles: ['src/**/*'], // откуда смотреть
+
+  },
 
 }
