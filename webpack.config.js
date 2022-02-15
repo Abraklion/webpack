@@ -59,9 +59,16 @@ module.exports = {
 
       // Обработчик 1: Подключаем шаблонизатор Pug
       {
-        test: /\.pug$/,
-        loader: 'pug-loader',
+        test: /\.pug$/, // расширения файлов на которых будет влиять loader
         exclude: /(node_modules|bower_components)/,
+        use: [
+          {
+            loader: "pug-loader",
+            options: {
+              pretty: true
+            }
+          }
+        ]
       },
 
       // Обработчик 2: Выдергивает картинки из Html и складывает в папку assets
